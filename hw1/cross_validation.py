@@ -3,8 +3,7 @@ import numpy as np
 from performance_metrics import calc_root_mean_squared_error
 
 
-def train_models_and_calc_scores_for_n_fold_cv(
-        estimator, x_NF, y_N, n_folds=3, random_state=0):
+def train_models_and_calc_scores_for_n_fold_cv(estimator, x_NF, y_N, n_folds=3, random_state=0):
     ''' Perform n-fold cross validation for a specific sklearn estimator object
 
     Args
@@ -60,15 +59,35 @@ def train_models_and_calc_scores_for_n_fold_cv(
 
     # TODO define the folds here by calling your function
     # e.g. ... = make_train_and_test_row_ids_for_n_fold_cv(...)
-
+    train_error_per_fold = make_train_and_test_row_ids_for_n_fold_cv(n_examples=x_NF.shape[0], n_folds=n_folds, random_state= random_state)
+    test_error_per_fold = make_train_and_test_row_ids_for_n_fold_cv(n_examples=x_NF.shape[0], n_folds=n_folds, random_state= random_state)
     # TODO loop over folds and compute the train and test error
     # for the provided estimator
+    for i in range(n_folds):
+        train = train_error_per_fold[i]
+        test = test_error_per_fold[i]
+
+        x_train = x_NF[train]
+        y_train = y_N[train]
+
+        x_test = x_NF[test]
+        y_test = y_N[test]
+
+        #training the model
+        estimator.fit(x_train, y_train)
+
+        # Make predictions on both training and test data
+        y_train_pred = estimator.predict(x_train)
+        y_test_pred = estimator.predict(x_test)
+
+        # Mean squared error
+        train_error_fold[i] = np.mean((y_train - y_train_pred) ** 2)
+        test_error_fold[i] = np.mean((y_test - y_test_pred) ** 2)
 
     return train_error_per_fold, test_error_per_fold
 
 
-def make_train_and_test_row_ids_for_n_fold_cv(
-        n_examples=0, n_folds=3, random_state=0):
+def make_train_and_test_row_ids_for_n_fold_cv(n_examples=0, n_folds=3, random_state=0):
     ''' Divide row ids into train and test sets for n-fold cross validation.
 
     Will *shuffle* the row ids via a pseudorandom number generator before
@@ -136,11 +155,37 @@ def make_train_and_test_row_ids_for_n_fold_cv(
         random_state = np.random.RandomState(int(random_state))
 
     # TODO obtain a shuffled order of the n_examples
+    #random_state.random.shuffle(np.arange(n_examples)) #shuffle is true and so is random
+    indices = np.arange(n_examples)
+    random_state.shuffle(indices)
+    #
 
     train_ids_per_fold = list()
     test_ids_per_fold = list()
     
     # TODO establish the row ids that belong to each fold's
+    #200 = data size, 10 = n, [20,20,20,20,20,...n10]
+    rows_in_each_fold = [n_examples // n_folds] #The number in each row so in this example, 20
+    fold_list = rows_in_each_fold * n_folds #How many rows there will be
+    for i in range(n_examples % n_folds):
+        fold_list[i] += 1
+
     # train subset and test subset
+    #index_state_current = 0
+    folds =  np.array_split(indices, n_folds)
+
+    for i in range(fold_list):
+        test_i = folds[i]
+        train_i = list()
+
+        train_ids = np.concatenate(folds[:i] + folds[i+1:])
+
+         # Add the current fold's train and test indices to the lists
+        train_ids_per_fold.append(train_ids)
+        test_ids_per_fold.append(test_ids)
+
+        # Move the current index forward to the next fold
+        #index_state_current += i
 
     return train_ids_per_fold, test_ids_per_fold
+

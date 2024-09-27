@@ -74,11 +74,25 @@ class LeastSquaresLinearRegressor(object):
             \min_{w \in \mathbb{R}^F, b \in \mathbb{R}}
                 \sum_{n=1}^N (y_n - b - \sum_f x_{nf} w_f)^2
         '''      
+        #First, we get the number of rows-example and columns-features
         N, F = x_NF.shape
-        
+        bias = np.ones((N, 1))
+
+        x_B = np.hstack((x_NF, bias))
+
+        #X^T * X
+        XT_X = x_B.T @ x_B
+        #X^T * Y
+        XT_Y = x_B.T @ y_N
+
+        weights_B = np.linalg.solve(XT_X, XT_Y)
+        self.w_F = weights_B[:-1]
+        self.b = weights_B[-1]
+
         # Hint: Use np.linalg.solve
         # Using np.linalg.inv may cause issues (see day03 lab) 
-        pass # TODO fixme
+        
+        #plugging in the equation 
 
 
     def predict(self, x_MF):
@@ -96,7 +110,8 @@ class LeastSquaresLinearRegressor(object):
             Each value is the predicted scalar for one example
         '''
         # TODO FIX ME
-        return np.asarray([0.0])
+        a = x_MF @ self.w_F + self.b
+        return a
 
 
 
